@@ -1,0 +1,21 @@
+qflipper_app_id = "flip_precir"
+
+App(
+    appid="flip_precir",
+    name="Flip PrecIR",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="flip_precir_app",
+    stack_size=2 * 1024,
+    fap_icon="icon.png",  # We will need an icon later, placeholder for now
+    fap_category="Infrared",
+    fap_author="Antigravity",
+    fap_weburl="https://github.com/furrtek/PrecIR",
+    fap_version="0.1",
+    fap_description="Pricer ESL Communicator",
+    requires=[
+        "gui",
+    ],
+    fap_libs=[
+        "infrared",
+    ],
+)
