@@ -7,6 +7,8 @@
 #include <gui/modules/byte_input.h>
 #include <gui/modules/text_input.h>
 #include <gui/modules/widget.h>
+#include <dialogs/dialogs.h>
+#include <storage/storage.h>
 #include <input/input.h>
 #include <stdio.h>
 #include <string.h>
@@ -46,6 +48,7 @@ typedef struct {
 typedef struct {
     ViewDispatcher* view_dispatcher;
     Gui* gui;
+    DialogsApp* dialogs;
     
     // Views
     View* view_main;
@@ -135,6 +138,68 @@ static void precir_transmit_process(PrecIRApp* app) {
     }
 }
 
+static void precir_transmit_file(PrecIRApp* app) {
+    FuriString* file_path = furi_string_alloc();
+    furi_string_set(file_path, "/ext");
+
+    DialogsFileBrowserOptions browser_options;
+    dialog_file_browser_set_basic_options(&browser_options, ".esl", NULL);
+    browser_options.hide_ext = false;
+
+    bool res = dialog_file_browser_show(app->dialogs, file_path, file_path, &browser_options);
+    if(res) {
+        // Show transmitting UI
+        {
+            PrecIRModel* m = view_get_model(app->view_main);
+            m->transmitting = true;
+            view_commit_model(app->view_main, true);
+            view_dispatcher_switch_to_view(app->view_dispatcher, PrecIRViewMain);
+        }
+
+        Storage* storage = furi_record_open(RECORD_STORAGE);
+        File* file = storage_file_alloc(storage);
+        if(storage_file_open(file, furi_string_get_cstr(file_path), FSAM_READ, FSOM_OPEN_EXISTING)) {
+
+            uint8_t header = 0;
+            if(storage_file_read(file, &header, 1) == 1) {
+                bool pp16 = (header & 0x01);
+
+                uint8_t len_buf[1];
+                uint8_t repeats_buf[2];
+                uint8_t frame_buf[PRECIR_MAX_FRAME_SIZE];
+
+                while(storage_file_read(file, repeats_buf, 2) == 2) {
+                     if(storage_file_read(file, len_buf, 1) != 1) break;
+                     uint8_t len = len_buf[0];
+
+                     if(len > PRECIR_MAX_FRAME_SIZE) len = PRECIR_MAX_FRAME_SIZE;
+
+                     if(storage_file_read(file, frame_buf, len) != len) break;
+
+                     uint16_t repeats = repeats_buf[0] | (repeats_buf[1] << 8);
+
+                     for(uint16_t r=0; r<repeats; r++) {
+                         precir_driver_transmit(frame_buf, len, pp16);
+                         if(repeats > 1) furi_delay_us(1000);
+                     }
+                     furi_delay_ms(10);
+                }
+            }
+            storage_file_close(file);
+        }
+        storage_file_free(file);
+        furi_record_close(RECORD_STORAGE);
+
+        // Clear transmitting UI
+        {
+            PrecIRModel* m = view_get_model(app->view_main);
+            m->transmitting = false;
+            view_commit_model(app->view_main, true);
+        }
+    }
+    furi_string_free(file_path);
+}
+
 static bool precir_input_callback(InputEvent* event, void* context) {
     PrecIRApp* app = (PrecIRApp*)context;
     
@@ -157,7 +222,8 @@ static void precir_menu_callback(void* context, uint32_t index) {
     switch(index) {
         case 0: view_dispatcher_switch_to_view(app->view_dispatcher, PrecIRViewConfig); break;
         case 1: view_dispatcher_switch_to_view(app->view_dispatcher, PrecIRViewIdMenu); break;
-        case 2: view_dispatcher_switch_to_view(app->view_dispatcher, PrecIRViewAbout); break;
+        case 2: precir_transmit_file(app); break;
+        case 3: view_dispatcher_switch_to_view(app->view_dispatcher, PrecIRViewAbout); break;
     }
 }
 
@@ -277,6 +343,7 @@ int32_t flip_precir_app(void* p) {
     memset(app, 0, sizeof(PrecIRApp));
 
     app->gui = furi_record_open(RECORD_GUI);
+    app->dialogs = furi_record_open(RECORD_DIALOGS);
     app->view_dispatcher = view_dispatcher_alloc();
     
     view_dispatcher_attach_to_gui(app->view_dispatcher, app->gui, ViewDispatcherTypeFullscreen);
@@ -294,7 +361,8 @@ int32_t flip_precir_app(void* p) {
     app->submenu_main = submenu_alloc();
     submenu_add_item(app->submenu_main, "Mode / Config", 0, precir_menu_callback, app);
     submenu_add_item(app->submenu_main, "Set ID", 1, precir_menu_callback, app);
-    submenu_add_item(app->submenu_main, "About", 2, precir_menu_callback, app);
+    submenu_add_item(app->submenu_main, "Transmit File", 2, precir_menu_callback, app);
+    submenu_add_item(app->submenu_main, "About", 3, precir_menu_callback, app);
     view_set_previous_callback(submenu_get_view(app->submenu_main), precir_back_to_main_callback);
     view_dispatcher_add_view(app->view_dispatcher, PrecIRViewMenu, submenu_get_view(app->submenu_main));
 
@@ -373,6 +441,7 @@ int32_t flip_precir_app(void* p) {
     
     view_dispatcher_free(app->view_dispatcher);
     furi_record_close(RECORD_GUI);
+    furi_record_close(RECORD_DIALOGS);
     free(app);
 
     return 0;
