@@ -337,6 +337,11 @@ void precir_setup_default_id(PrecIRApp* app) {
     view_commit_model(app->view_main, true);
 }
 
+static uint32_t precir_exit_callback(void* context) {
+    UNUSED(context);
+    return VIEW_NONE; 
+}
+
 int32_t flip_precir_app(void* p) {
     UNUSED(p);
     PrecIRApp* app = malloc(sizeof(PrecIRApp));
@@ -354,6 +359,8 @@ int32_t flip_precir_app(void* p) {
     view_allocate_model(app->view_main, ViewModelTypeLocking, sizeof(PrecIRModel));
     view_set_draw_callback(app->view_main, precir_draw_callback);
     view_set_input_callback(app->view_main, precir_input_callback);
+    
+    view_set_previous_callback(app->view_main, precir_exit_callback);
     
     view_dispatcher_add_view(app->view_dispatcher, PrecIRViewMain, app->view_main);
 
