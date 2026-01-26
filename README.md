@@ -1,4 +1,4 @@
-# FlipIR
+# PriceIR
 
 **WARNING: This software is currently in active development. Some functions may cause the Flipper Zero to lock up, requiring a hard reset. Use at your own risk.**
 
