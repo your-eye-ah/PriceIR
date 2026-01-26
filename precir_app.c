@@ -74,7 +74,7 @@ static void precir_draw_callback(Canvas* canvas, void* model_data) {
     canvas_set_font(canvas, FontSecondary);
     
     // Header
-    canvas_draw_str(canvas, 2, 8, "FlipIR Transmitter");
+    canvas_draw_str(canvas, 2, 8, "PriceIR");
 
     // ID
     char buf[64];
@@ -412,7 +412,7 @@ int32_t flip_precir_app(void* p) {
     // 7. About
     app->widget_about = widget_alloc();
     widget_add_text_scroll_element(app->widget_about, 0, 0, 128, 64, 
-        "FlipIR Pricer Tool\n\nControl Electronic Shelf Labels.\n\nCreated by Your_eye_ah\n\nImplements PP4/PP16 protocols.");
+        "PriceIR\n\nControl Electronic Shelf Labels.\n\nCreated by Your_eye_ah\n\nImplements PP4/PP16 protocols.");
     view_set_previous_callback(widget_get_view(app->widget_about), precir_back_to_menu_callback);
     view_dispatcher_add_view(app->view_dispatcher, PrecIRViewAbout, widget_get_view(app->widget_about));
 

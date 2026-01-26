@@ -1,6 +1,6 @@
 # PrecIR Android App
 
-This Android application works as a companion to the FlipIR Flipper Zero app. It allows you to:
+This Android application works as a companion to the PriceIR Flipper Zero app. It allows you to:
 1. Load an image from your gallery.
 2. Enter a Product Label ID (PLID) or Barcode.
 3. Configure settings (PP16/PP4 protocol).

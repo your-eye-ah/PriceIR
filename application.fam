@@ -2,7 +2,7 @@ qflipper_app_id = "flip_precir"
 
 App(
     appid="flip_precir",
-    name="Flip PrecIR",
+    name="PriceIR",
     apptype=FlipperAppType.EXTERNAL,
     entry_point="flip_precir_app",
     stack_size=2 * 1024,
